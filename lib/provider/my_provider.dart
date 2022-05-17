@@ -7,6 +7,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:task_app/models/chat_model.dart';
+import 'package:task_app/models/conversation_model.dart';
 import 'package:task_app/models/custom_chat_model.dart';
 import 'package:task_app/utils/constants.dart' as constants;
 import 'package:task_app/utils/unique_id_gernator.dart';
@@ -14,21 +15,23 @@ import 'package:task_app/utils/unique_id_gernator.dart';
 class MyProvider extends ChangeNotifier {
   late String? _password;
   double? _strength = 0;
+  String? tempConversationId = '0';
   int? tempIndex = 0;
   Dio? dio = Dio();
   bool reTry = false;
   bool isChatCompleted = false;
+  bool isLoading = false;
   bool get getReTry => reTry;
+  bool get getIsLoading => isLoading;
   bool get getIsChatCompleted => isChatCompleted;
   List<ChatModelRestaurant?>? _restaurant;
+  String? get getTempConversationId => tempConversationId;
   List<CustomChatModel?>? capturedChats = [];
+  final List<ConverstaionModel?>? conversationList = [];
+  List<ConverstaionModel?>? get getConversationList => conversationList;
   List<CustomChatModel?>? get getCapturedChats => capturedChats!;
 
-  List<ChatModelRestaurant?>? get restaurant => [..._restaurant!];
-
-  //  setCapturedChats(ChatModelRestaurant value) {
-  //   capturedChats!.add(value);
-  // }
+  List<ChatModelRestaurant?>? get restaurant => [..._restaurant ?? []];
 
   // RegExp? numReg = RegExp(r".*[0-9].*");
   // RegExp? letterReg = RegExp(r".*[A-Za-z].*");
@@ -91,13 +94,18 @@ $ */
     if (reTry) {
       if (_human == 'no') {
         reTry = false;
-        _result = "You could say this -> '${restaurant![tempIndex!]!.human}'";
-        capturedChats!.add(CustomChatModel(
-          text: _result,
-          textId: GUIDGen.generate(),
-          time: DateTime.now().toString(),
-        ));
+        isLoading = true;
         await Future.delayed(const Duration(seconds: 1));
+        _result = " You could say '${restaurant![tempIndex!]!.human}'";
+        // capturedChats!.add(CustomChatModel(
+        //   text: _result,
+        //   textId: GUIDGen.generate(),
+        //   time: DateTime.now().toString(),
+        // ));
+        insertBotSentence(botSentence: _result);
+
+        await Future.delayed(const Duration(seconds: 1));
+        isLoading = false;
         // Future.delayed(const Duration(seconds: 1)).then((value) {
         var nextIndex = tempIndex! + 1;
         tempIndex = nextIndex;
@@ -106,44 +114,34 @@ $ */
           _result = 'Thank you!!';
           log("Result--> $_result");
           // inserHumanSentence(humanSentence);
-          capturedChats!.add(CustomChatModel(
-            text: _result,
-            textId: GUIDGen.generate(),
-            time: DateTime.now().toString(),
-          ));
-          notifyListeners();
+          // capturedChats!.add(CustomChatModel(
+          //   text: _result,
+          //   textId: GUIDGen.generate(),
+          //   time: DateTime.now().toString(),
+          // ));
+          insertBotSentence(botSentence: _result);
+          // notifyListeners();
           return _result;
         }
         _result = restaurant![nextIndex]!.bot;
-        capturedChats!.add(CustomChatModel(
-          text: _result,
-          textId: GUIDGen.generate(),
-          time: DateTime.now().toString(),
-        ));
-        notifyListeners();
-        // });
-        // reTry = false;
-        // clearChats()
-        return _result;
-        // Navigator.pop(context);
-        // _result = "Thank You";
+        insertBotSentence(botSentence: _result);
         // capturedChats!.add(CustomChatModel(
         //   text: _result,
         //   textId: GUIDGen.generate(),
         //   time: DateTime.now().toString(),
         // ));
-        // reTry = false;
-        // // clearChats();
-        // return _result;
+        notifyListeners();
+        return _result;
       }
       reTry = false;
       _result = 'I am listening';
-      capturedChats!.add(CustomChatModel(
-        text: _result,
-        textId: GUIDGen.generate(),
-        time: DateTime.now().toString(),
-      ));
-      notifyListeners();
+      // capturedChats!.add(CustomChatModel(
+      //   text: _result,
+      //   textId: GUIDGen.generate(),
+      //   time: DateTime.now().toString(),
+      // ));
+      insertBotSentence(botSentence: _result);
+      // notifyListeners();
       return _result;
     }
     var index = restaurant!.indexWhere(
@@ -159,16 +157,22 @@ $ */
     //         element.bot == botSentence!.toLowerCase(),
     //     orElse: () => null);
     if (index == -1) {
-      _result = "Oops you missed something! Do you want to try again?";
+      isLoading = true;
+
+      _result = "Your sentence is invalid";
       // capturedChats!.add(ChatModelRestaurant(bot: _result ));
       // inserHumanSentence(humanSentence);
       reTry = true;
-      capturedChats!.add(CustomChatModel(
-        text: _result,
-        textId: GUIDGen.generate(),
-        time: DateTime.now().toString(),
-      ));
-
+      // capturedChats!.add(CustomChatModel(
+      //   text: _result,
+      //   textId: GUIDGen.generate(),
+      //   time: DateTime.now().toString(),
+      // ));
+      insertBotSentence(botSentence: _result);
+      await Future.delayed(const Duration(seconds: 1));
+      _result = 'Do you want to try again?';
+      insertBotSentence(botSentence: _result);
+      isLoading = false;
       log("Result--> $_result");
       notifyListeners();
       return _result;
@@ -180,12 +184,12 @@ $ */
       _result = 'Thank you!!';
       log("Result--> $_result");
       // inserHumanSentence(humanSentence);
-      capturedChats!.add(CustomChatModel(
-        text: _result,
-        textId: GUIDGen.generate(),
-        time: DateTime.now().toString(),
-      ));
-      notifyListeners();
+      // capturedChats!.add(CustomChatModel(
+      //   text: _result,
+      //   textId: GUIDGen.generate(),
+      //   time: DateTime.now().toString(),
+      // ));
+      insertBotSentence(botSentence: _result);
       return _result;
     } else {
       _result = restaurant![index]!.bot;
@@ -193,14 +197,36 @@ $ */
     log("Result--> $_result");
     // inserHumanSentence(humanSentence);
 
-    capturedChats!.add(CustomChatModel(
-      text: _result,
-      textId: GUIDGen.generate(),
-      time: DateTime.now().toString(),
-      isValid: true, //for checking end valid message.
-    ));
+    // capturedChats!.add(CustomChatModel(
+    //   text: _result,
+    //   textId: GUIDGen.generate(),
+    //   time: DateTime.now().toString(),
+    //   isValid: true, //for checking end valid message.
+    // ));
+    insertBotSentence(botSentence: _result);
     notifyListeners();
     return _result;
+  }
+
+  insertBotSentence({String? botSentence}) {
+    capturedChats!.add(CustomChatModel(
+      text: botSentence,
+      textId: GUIDGen.generate(),
+      time: DateTime.now().toString(),
+
+      //for checking end valid message.
+    ));
+
+    for (var element in conversationList!) {
+      if (element!.chatId == tempConversationId) {
+        element.chatList!.clear();
+        element.chatList!.addAll(capturedChats!);
+        element.time = DateTime.now().toString();
+      }
+    }
+    // log(conversationList!.length.toString());
+
+    notifyListeners();
   }
 
   inserHumanSentence(
@@ -212,6 +238,18 @@ $ */
         textId: GUIDGen.generate(),
         time: DateTime.now().toString(),
         userId: 1));
+    // var ele = _conversationList!.firstWhere(
+    //     (element) => element!.chatId == tempConversationId,
+    //     orElse: () => null);
+    // if (ele == null) return;
+    for (var element in conversationList!) {
+      if (element!.chatId == tempConversationId) {
+        element.chatList!.clear();
+        element.chatList!.addAll(capturedChats!);
+        element.time = DateTime.now().toString();
+      }
+      // log(conversationList!.length.toString());
+    }
     // var endEleIndex = capturedChats!.length - 1;
     // capturedChats![endEleIndex]!.isMe = true;
     // capturedChats!.insert(
@@ -224,6 +262,10 @@ $ */
   }
 
   clearChats() {
+    tempConversationId = "0";
+    tempIndex = 0;
+    isChatCompleted = false;
+    isLoading = false;
     isChatCompleted = false;
     capturedChats!.clear();
     notifyListeners();

@@ -1,8 +1,13 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:provider/provider.dart';
+import 'package:task_app/provider/my_provider.dart';
 import 'package:task_app/screens/chat_screen.dart';
 import 'package:task_app/utils/styles.dart';
 import 'package:task_app/utils/ui_helper.dart';
+import 'package:task_app/utils/extensions.dart';
 
 class HomeScreen extends StatelessWidget {
   static const routeName = '/home';
@@ -34,6 +39,14 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final provider = Provider.of<MyProvider>(context);
+    var data = DateTime.now();
+    // data.
+    log(data.timeAgo());
+
+    // da
+
+    log(provider.conversationList!.length.toString());
     // log(DateTime.now().toString());
 
     return SafeArea(
@@ -94,6 +107,11 @@ class HomeScreen extends StatelessWidget {
                     ),
                 shrinkWrap: true,
                 itemBuilder: (context, index) {
+                  var time = DateTime.tryParse(
+                      provider.conversationList![index]!.time ??
+                          DateTime.now().toString());
+                  // log(data.timeAgo());
+                  // DateTime(data);
                   return ListTile(
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 5,
@@ -112,11 +130,19 @@ class HomeScreen extends StatelessWidget {
                       ),
                     ),
                     title: Text(
-                      'Restaurant',
+                      provider.conversationList![index]!.chatTitle ??
+                          'Restaurant',
                       style: Styles.headingStyle4(isBold: true),
                     ),
                     subtitle: Text(
-                      'Bot: Hello',
+                      provider.conversationList![index]!.chatList!.isNotEmpty
+                          ? provider.conversationList![index]!.chatList!.last!
+                                      .userId ==
+                                  null
+                              ? 'Bot: ${provider.conversationList![index]!.chatList!.last!.text}'
+                              : 'Human: ${provider.conversationList![index]!.chatList!.last!.text}'
+                          : 'Bot: Hello',
+                      // 'Bot: ${provider.conversationList![index]!.chatList!.isNotEmpty ? provider.conversationList![index]!.chatList!.last!.userId == null ? "Hello" : provider.conversationList![index]!.chatList!.last!.text : "Hello"}',
                       style: Styles.headingStyle5(),
                     ),
                     trailing: Column(
@@ -124,7 +150,7 @@ class HomeScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Text(
-                          '${2 * index + 1} minutes ago',
+                          time!.timeAgo(),
                           style: Styles.headingStyle6(),
                         ),
                         const Padding(
@@ -139,7 +165,7 @@ class HomeScreen extends StatelessWidget {
                     ),
                   );
                 },
-                itemCount: 2),
+                itemCount: provider.getConversationList!.length),
           ),
           // tex
         ])),

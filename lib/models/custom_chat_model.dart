@@ -3,10 +3,14 @@ class CustomChatModel {
   String? textId;
   String? text;
   String? time;
-  bool? isValid = false;
+  // bool? isValid = false;
 
-  CustomChatModel(
-      {this.userId, this.textId, this.text, this.time, this.isValid});
+  CustomChatModel({
+    this.userId,
+    this.textId,
+    this.text,
+    this.time,
+  });
   CustomChatModel.fromJson(Map<String, dynamic> json) {
     userId = json['user_id']?.toInt();
     textId = json['text_id']?.toString();

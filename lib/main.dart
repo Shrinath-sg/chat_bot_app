@@ -8,6 +8,7 @@ import 'package:task_app/screens/signup.dart';
 import 'package:task_app/utils/colors.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const MyApp());
 }
 
@@ -34,7 +35,7 @@ class MyApp extends StatelessWidget {
           routes: {
             LoginScreen.routeName: (context) => const LoginScreen(),
             SignupScreen.routeName: (context) => const SignupScreen(),
-            HomeScreen.routeName: (context) => HomeScreen(),
+            HomeScreen.routeName: (context) => const HomeScreen(),
             ChatScreen.routeName: (context) => const ChatScreen(),
           }),
     );

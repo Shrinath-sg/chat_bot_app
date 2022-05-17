@@ -7,7 +7,7 @@ import 'package:iconsax/iconsax.dart';
 import 'package:provider/provider.dart';
 import 'package:task_app/common_widgets/chat_bubble/receive_bubble.dart';
 import 'package:task_app/common_widgets/chat_bubble/send_message.dart';
-import 'package:task_app/models/custom_chat_model.dart';
+import 'package:task_app/models/conversation_model.dart';
 import 'package:task_app/provider/my_provider.dart';
 import 'package:task_app/utils/colors.dart';
 import 'package:task_app/utils/styles.dart';
@@ -23,6 +23,7 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> {
+  final ScrollController _scrollController = ScrollController();
   bool isLoading = true;
   var messages = [
     const SentMessageScreen(message: "Hello"),
@@ -45,14 +46,22 @@ class _ChatScreenState extends State<ChatScreen> {
     final provider = Provider.of<MyProvider>(context, listen: false);
     await provider.getChatData();
     provider.clearChats();
-    provider.capturedChats!.add(CustomChatModel(
-      text: 'Hello',
-      textId: GUIDGen.generate(),
-      time: DateTime.now().toString(),
-    ));
+    provider.tempConversationId = GUIDGen.generate();
+    provider.conversationList!.add(ConverstaionModel(
+        chatId: provider.tempConversationId,
+        chatTitle: 'Restaurant',
+        time: DateTime.now().toString(),
+        chatList: []));
+    provider.insertBotSentence(botSentence: 'Hello');
     setState(() {
       isLoading = false;
     });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   @override
@@ -115,6 +124,8 @@ class _ChatScreenState extends State<ChatScreen> {
                     child: Padding(
                       padding: const EdgeInsets.all(1.0),
                       child: ListView.builder(
+                        shrinkWrap: true,
+                        controller: _scrollController,
                         // padding: const EdgeInsets.all(20),
                         itemCount: provider.capturedChats!.length,
                         itemBuilder: (context, index) {
@@ -135,65 +146,113 @@ class _ChatScreenState extends State<ChatScreen> {
                   ),
                   SizedBox(
                     child: Material(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Container(),
-                          Card(
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(25)),
-                            child: IconButton(
-                                onPressed: () async {
-                                  final provider = Provider.of<MyProvider>(
-                                      context,
-                                      listen: false);
-                                  if (provider.isChatCompleted) {
-                                    Fluttertoast.showToast(
-                                        msg: 'chat is completed!!');
-                                    return;
-                                  }
-                                  provider.matchInputSetence(
-                                      botSentence: provider.capturedChats!
-                                          .elementAt(
-                                              provider.capturedChats!.length -
+                          if (provider.getIsLoading == false)
+                            Column(
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: Text(
+                                    "Suggestions",
+                                    style: Styles.headingStyle4(),
+                                  ),
+                                ),
+                                const Divider(),
+                                ListTile(
+                                  leading: Icon(
+                                    Icons.lightbulb_outline,
+                                    color: Colors.yellow.shade700,
+                                  ),
+                                  title: Text(
+                                    "Yes or no",
+                                    style: Styles.headingStyle5(),
+                                  ),
+                                  subtitle: Text(
+                                    "Reply by",
+                                    style: Styles.headingStyle5(isBold: true),
+                                  ),
+                                  trailing: const Icon(
+                                    Icons.headset,
+                                    color: AppColors.purple,
+                                    size: 20,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            children: [
+                              Container(),
+                              Card(
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(25)),
+                                child: IconButton(
+                                    onPressed: () async {
+                                      final provider = Provider.of<MyProvider>(
+                                          context,
+                                          listen: false);
+                                      if (provider.isChatCompleted) {
+                                        Fluttertoast.showToast(
+                                            msg: 'chat is completed!!');
+                                        return;
+                                      }
+                                      provider.matchInputSetence(
+                                          botSentence: provider.capturedChats!
+                                              .elementAt(provider
+                                                      .capturedChats!.length -
                                                   1)!
-                                          .text,
-                                      humanSentence: "no");
-                                  // var endEleIndex =
-                                  //     provider.capturedChats!.length - 1;
-                                  // provider.capturedChats!.insert(endEleIndex,
-                                  //     ChatModelRestaurant(bot: data!));
-                                },
-                                icon: const Icon(
-                                  Iconsax.microphone_25,
-                                  color: AppColors.purple,
-                                  size: 30,
-                                )),
+                                              .text,
+                                          humanSentence: "no");
+                                      await Future.delayed(
+                                          const Duration(milliseconds: 2500));
+                                      if (_scrollController.hasClients) {
+                                        _scrollController.animateTo(
+                                          _scrollController
+                                              .position.maxScrollExtent,
+                                          curve: Curves.easeOut,
+                                          duration:
+                                              const Duration(milliseconds: 300),
+                                        );
+                                      }
+                                      // var endEleIndex =
+                                      //     provider.capturedChats!.length - 1;
+                                      // provider.capturedChats!.insert(endEleIndex,
+                                      //     ChatModelRestaurant(bot: data!));
+                                    },
+                                    icon: const Icon(
+                                      Iconsax.microphone_25,
+                                      color: AppColors.purple,
+                                      size: 30,
+                                    )),
+                              ),
+                              Card(
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(25)),
+                                child: IconButton(
+                                    onPressed: () {
+                                      // final provider = Provider.of<MyProvider>(
+                                      //     context,
+                                      //     listen: false);
+                                      // var data = provider.matchInputSetence(
+                                      //     botSentence: "Would you like some water?",
+                                      //     humanSentence: "yes please");
+                                      // Fluttertoast.showToast(msg: data.toString());
+                                    },
+                                    icon: const Icon(
+                                      Iconsax.keyboard_open5,
+                                      color: AppColors.purple,
+                                      size: 28,
+                                    )),
+                              )
+                            ],
                           ),
-                          Card(
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(25)),
-                            child: IconButton(
-                                onPressed: () {
-                                  final provider = Provider.of<MyProvider>(
-                                      context,
-                                      listen: false);
-                                  var data = provider.matchInputSetence(
-                                      botSentence: "Would you like some water?",
-                                      humanSentence: "yes please");
-                                  Fluttertoast.showToast(msg: data.toString());
-                                },
-                                icon: const Icon(
-                                  Iconsax.keyboard_open5,
-                                  color: AppColors.purple,
-                                  size: 28,
-                                )),
-                          )
                         ],
                       ),
                       color: Colors.grey.shade100,
                     ),
-                    height: 100,
+                    // height: 100,
                     width: double.infinity,
                   ),
                 ],
