@@ -13,6 +13,14 @@ class Styles {
       contentPadding: const EdgeInsets.all(0.0),
       labelText: labelText,
       hintText: hintText,
+      errorBorder: OutlineInputBorder(
+        borderSide: const BorderSide(color: Colors.red, width: 2),
+        borderRadius: BorderRadius.circular(10.0),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderSide: const BorderSide(color: Colors.red, width: 2),
+        borderRadius: BorderRadius.circular(10.0),
+      ),
       labelStyle: const TextStyle(
         color: Colors.black,
         fontSize: 14.0,

@@ -9,7 +9,9 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:task_app/models/chat_model.dart';
 import 'package:task_app/models/conversation_model.dart';
 import 'package:task_app/models/custom_chat_model.dart';
+import 'package:task_app/models/user_model.dart';
 import 'package:task_app/utils/constants.dart' as constants;
+import 'package:task_app/utils/shared_preference.dart';
 import 'package:task_app/utils/unique_id_gernator.dart';
 
 class MyProvider extends ChangeNotifier {
@@ -21,6 +23,8 @@ class MyProvider extends ChangeNotifier {
   bool reTry = false;
   bool isChatCompleted = false;
   bool isLoading = false;
+  UserModel? _user = UserModel();
+  UserModel? get user => _user;
   bool get getReTry => reTry;
   bool get getIsLoading => isLoading;
   bool get getIsChatCompleted => isChatCompleted;
@@ -35,8 +39,8 @@ class MyProvider extends ChangeNotifier {
 
   // RegExp? numReg = RegExp(r".*[0-9].*");
   // RegExp? letterReg = RegExp(r".*[A-Za-z].*");
-  RegExp regex =
-      RegExp(r'^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[!@#\$&*~]).{8,}$');
+  // RegExp regex =
+  //     RegExp(r'^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[!@#\$&*~]).{8,}$');
 /*       r'^
   (?=.*[A-Z])       // should contain at least one upper case
   (?=.*[a-z])       // should contain at least one lower case
@@ -62,7 +66,7 @@ $ */
       _strength = 2 / 4;
       _displayText = 'Your password is acceptable but not strong';
     } else {
-      if (!regex.hasMatch(_password!)
+      if (!constants.passwordRegExp.hasMatch(_password!)
           // ||
           // !letterReg!.hasMatch(_password!) ||
           // !numReg!.hasMatch(_password!)
@@ -296,5 +300,22 @@ $ */
       log("${constants.chatData!} api error  -> ${e.toString()}");
       rethrow;
     }
+  }
+
+  signUp(UserModel user) async {
+    log("saved data-->" + jsonEncode(user));
+    await Future.delayed(const Duration(seconds: 2));
+    await MySharedPreferences.instance.setStringValue('user', jsonEncode(user));
+  }
+
+  getUser() async {
+    await MySharedPreferences.instance.reload();
+    var data = await MySharedPreferences.instance.getStringValue('user');
+    // inspect(data);
+    // log(data.toString());
+    if (data == null || data.isEmpty) return;
+    log("fetched data from pref-->" + data);
+    var json = jsonDecode(data);
+    _user = UserModel.fromJson(json);
   }
 }

@@ -1,17 +1,26 @@
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:provider/provider.dart';
 import 'package:task_app/provider/my_provider.dart';
 import 'package:task_app/screens/chat_screen.dart';
+import 'package:task_app/screens/login.dart';
+import 'package:task_app/utils/shared_preference.dart';
 import 'package:task_app/utils/styles.dart';
 import 'package:task_app/utils/ui_helper.dart';
 import 'package:task_app/utils/extensions.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   static const routeName = '/home';
   const HomeScreen({Key? key}) : super(key: key);
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
   showPopupMenu(BuildContext context) {
     // final RenderBox renderBox =
     //     _accKey.currentContext?.findRenderObject() as RenderBox;
@@ -24,6 +33,7 @@ class HomeScreen extends StatelessWidget {
       items: [
         const PopupMenuItem<String>(child: Text('Restaurant'), value: '1'),
         const PopupMenuItem<String>(child: Text('Interview'), value: '2'),
+        const PopupMenuItem<String>(child: Text('Logout'), value: '3'),
       ],
       elevation: 8.0,
     ).then<void>((String? itemSelected) {
@@ -31,18 +41,66 @@ class HomeScreen extends StatelessWidget {
 
       if (itemSelected == "1") {
         Navigator.pushNamed(context, ChatScreen.routeName);
+      } else if (itemSelected == "1") {
+        //code ehere
       } else {
-        //code here
+        _exitApp(context);
       }
     });
+  }
+
+  Future<bool?> _exitApp(BuildContext context) async {
+    return showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Are you sure you want to exit this application?'),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop(false);
+            },
+            child: const Text(
+              'NO',
+              style: TextStyle(fontSize: 18, color: Colors.black),
+            ),
+          ),
+          TextButton(
+            onPressed: () async {
+              try {
+                UiHelper.openLoadingDialog(context, "Logging of..");
+                // final gProvider =
+                //     Provider.of<GoogleSignInProvider>(context, listen: false);
+                // await gProvider.logout();
+                final bool result =
+                    await MySharedPreferences.instance.removeAll();
+                await Future.delayed(const Duration(seconds: 2));
+                if (result) {
+                  if (!mounted) return;
+                  Navigator.pushNamedAndRemoveUntil(
+                      context, LoginScreen.routeName, (route) => false);
+                  print('Shared pref cleared......');
+                }
+              } catch (err) {
+                Navigator.maybePop(context);
+                Fluttertoast.showToast(msg: 'something went wrong!');
+              }
+            },
+            child: const Text(
+              'YES',
+              style: TextStyle(fontSize: 18, color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<MyProvider>(context);
-    var data = DateTime.now();
+    // var data = DateTime.now();
     // data.
-    log(data.timeAgo());
+    // log(data.timeAgo());
 
     // da
 
