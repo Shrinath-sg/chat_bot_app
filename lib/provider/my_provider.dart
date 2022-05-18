@@ -18,9 +18,12 @@ class MyProvider extends ChangeNotifier {
   late String? _password;
   double? _strength = 0;
   String? tempConversationId = '0';
+  String? _nextSentence;
+  String? _previousSentence;
   int? tempIndex = 0;
   Dio? dio = Dio();
   bool reTry = false;
+  bool _islListning = false;
   bool isChatCompleted = false;
   bool isLoading = false;
   UserModel? _user = UserModel();
@@ -28,6 +31,7 @@ class MyProvider extends ChangeNotifier {
   bool get getReTry => reTry;
   bool get getIsLoading => isLoading;
   bool get getIsChatCompleted => isChatCompleted;
+  bool get islListning => _islListning;
   List<ChatModelRestaurant?>? _restaurant;
   String? get getTempConversationId => tempConversationId;
   List<CustomChatModel?>? capturedChats = [];
@@ -50,6 +54,8 @@ class MyProvider extends ChangeNotifier {
 $ */
   double? get strength => _strength;
   String? get displayText => _displayText;
+  String? get nextSentence => _nextSentence;
+  String? get previousSentence => _previousSentence;
 
   String _displayText = 'Please enter a password';
 
@@ -85,74 +91,80 @@ $ */
     notifyListeners();
   }
 
-  Future<String?> matchInputSetence(
-      {String? botSentence, String? humanSentence}) async {
+  String? matchInputSetence({String? botSentence, String? humanSentence}) {
     inserHumanSentence(humanSentence);
-    String? _result = "Oops you missed something! Do you want to try again";
-    String? _human =
+    // _islListning = false;
+    String? result = "Oops you missed something! Do you want to try again";
+    String? human =
         humanSentence!.toLowerCase().replaceAll(RegExp(",|!|'"), "");
 
-    String? _bot = botSentence!.toLowerCase().replaceAll(RegExp(",|!|'"), "");
+    String? bot = _islListning
+        ? previousSentence!.toLowerCase().replaceAll(RegExp(",|!|'"), "")
+        : botSentence!.toLowerCase().replaceAll(RegExp(",|!|'"), "");
+    _islListning = false;
     log("Before->>");
-    log(_human + "\t $_bot");
+    log("$human\t $bot");
     if (reTry) {
-      if (_human == 'no') {
+      if (human == 'no') {
         reTry = false;
         isLoading = true;
-        await Future.delayed(const Duration(seconds: 1));
-        _result = " You could say '${restaurant![tempIndex!]!.human}'";
+        // await Future.delayed(const Duration(seconds: 1));
+        result = " You could say '${restaurant![tempIndex!]!.human}'";
         // capturedChats!.add(CustomChatModel(
         //   text: _result,
         //   textId: GUIDGen.generate(),
         //   time: DateTime.now().toString(),
         // ));
-        insertBotSentence(botSentence: _result);
+        insertBotSentence(botSentence: result);
 
-        await Future.delayed(const Duration(seconds: 1));
+        // await Future.delayed(const Duration(seconds: 1));
         isLoading = false;
         // Future.delayed(const Duration(seconds: 1)).then((value) {
         var nextIndex = tempIndex! + 1;
         tempIndex = nextIndex;
         if (tempIndex == _restaurant!.length) {
           isChatCompleted = true;
-          _result = 'Thank you!!';
-          log("Result--> $_result");
+          result = 'Thank you!!';
+          log("Result--> $result");
           // inserHumanSentence(humanSentence);
           // capturedChats!.add(CustomChatModel(
           //   text: _result,
           //   textId: GUIDGen.generate(),
           //   time: DateTime.now().toString(),
           // ));
-          insertBotSentence(botSentence: _result);
+          insertBotSentence(botSentence: result);
           // notifyListeners();
-          return _result;
+          return result;
         }
-        _result = restaurant![nextIndex]!.bot;
-        insertBotSentence(botSentence: _result);
+        result = restaurant![nextIndex]!.bot;
+        insertBotSentence(botSentence: result);
         // capturedChats!.add(CustomChatModel(
         //   text: _result,
         //   textId: GUIDGen.generate(),
         //   time: DateTime.now().toString(),
         // ));
         notifyListeners();
-        return _result;
+        return result;
+      } else {
+        reTry = false;
+        result = 'I am listening';
+        _islListning = true;
+        // capturedChats!.add(CustomChatModel(
+        //   text: _result,
+        //   textId: GUIDGen.generate(),
+        //   time: DateTime.now().toString(),
+        // ));
+        insertBotSentence(botSentence: result);
+        getPreviousSentence();
+        //  tempsentence =  restaurant[tempIndex-1]
+        notifyListeners();
+        return result;
       }
-      reTry = false;
-      _result = 'I am listening';
-      // capturedChats!.add(CustomChatModel(
-      //   text: _result,
-      //   textId: GUIDGen.generate(),
-      //   time: DateTime.now().toString(),
-      // ));
-      insertBotSentence(botSentence: _result);
-      // notifyListeners();
-      return _result;
     }
     var index = restaurant!.indexWhere(
       (element) =>
-          element!.bot!.toLowerCase().replaceAll(RegExp(",|!|'"), "") == _bot &&
-          element.human!.toLowerCase().replaceAll(RegExp(",|!|'"), "") ==
-              _human,
+          element!.bot!.toLowerCase().replaceAll(RegExp(",|!|'"), "") == bot &&
+          element.human!.toLowerCase().replaceAll(RegExp(",|!|'"), "") == human,
     );
     log('index-->$index');
     // var data = restaurant!.firstWhere(
@@ -162,43 +174,43 @@ $ */
     //     orElse: () => null);
     if (index == -1) {
       isLoading = true;
-
-      _result = "Your sentence is invalid";
+      reTry = true;
+      result = "Your sentence is invalid! Do you want to try again?";
       // capturedChats!.add(ChatModelRestaurant(bot: _result ));
       // inserHumanSentence(humanSentence);
-      reTry = true;
+
       // capturedChats!.add(CustomChatModel(
       //   text: _result,
       //   textId: GUIDGen.generate(),
       //   time: DateTime.now().toString(),
       // ));
-      insertBotSentence(botSentence: _result);
-      await Future.delayed(const Duration(seconds: 1));
-      _result = 'Do you want to try again?';
-      insertBotSentence(botSentence: _result);
+      // insertBotSentence(botSentence: result);
+      // await Future.delayed(const Duration(seconds: 1));
+      // result = 'Do you want to try again?';
+      insertBotSentence(botSentence: result);
       isLoading = false;
-      log("Result--> $_result");
+      log("Result--> $result");
       notifyListeners();
-      return _result;
+      return result;
     }
     // return _result =
     index = index + 1;
     tempIndex = index;
     if (index == _restaurant!.length) {
-      _result = 'Thank you!!';
-      log("Result--> $_result");
+      result = 'Thank you!!';
+      log("Result--> $result");
       // inserHumanSentence(humanSentence);
       // capturedChats!.add(CustomChatModel(
       //   text: _result,
       //   textId: GUIDGen.generate(),
       //   time: DateTime.now().toString(),
       // ));
-      insertBotSentence(botSentence: _result);
-      return _result;
+      insertBotSentence(botSentence: result);
+      return result;
     } else {
-      _result = restaurant![index]!.bot;
+      result = restaurant![index]!.bot;
     }
-    log("Result--> $_result");
+    log("Result--> $result");
     // inserHumanSentence(humanSentence);
 
     // capturedChats!.add(CustomChatModel(
@@ -207,9 +219,35 @@ $ */
     //   time: DateTime.now().toString(),
     //   isValid: true, //for checking end valid message.
     // ));
-    insertBotSentence(botSentence: _result);
+    insertBotSentence(botSentence: result);
     notifyListeners();
-    return _result;
+    return result;
+  }
+
+  getNextSentence() {
+    if (tempIndex == restaurant!.length - 1) {
+      return _nextSentence = "Thank You";
+    }
+    var data = _restaurant!.elementAt(tempIndex!);
+    if (data == null) {
+      _nextSentence = "Thank You";
+    } else {
+      _nextSentence = data.human;
+    }
+    notifyListeners();
+  }
+
+  getPreviousSentence() {
+    if (tempIndex == restaurant!.length - 1) {
+      return "Thank You";
+    }
+    var data = _restaurant!.elementAt(tempIndex!);
+    if (data == null) {
+      _previousSentence = "Thank You";
+    } else {
+      _previousSentence = data.bot;
+    }
+    notifyListeners();
   }
 
   insertBotSentence({String? botSentence}) {
@@ -228,6 +266,7 @@ $ */
         element.time = DateTime.now().toString();
       }
     }
+    getNextSentence();
     // log(conversationList!.length.toString());
 
     notifyListeners();
@@ -254,6 +293,7 @@ $ */
       }
       // log(conversationList!.length.toString());
     }
+    getNextSentence();
     // var endEleIndex = capturedChats!.length - 1;
     // capturedChats![endEleIndex]!.isMe = true;
     // capturedChats!.insert(
@@ -271,6 +311,8 @@ $ */
     isChatCompleted = false;
     isLoading = false;
     isChatCompleted = false;
+    _islListning = false;
+    reTry = false;
     capturedChats!.clear();
     notifyListeners();
   }
@@ -303,7 +345,7 @@ $ */
   }
 
   signUp(UserModel user) async {
-    log("saved data-->" + jsonEncode(user));
+    log("saved data-->${jsonEncode(user)}");
     await Future.delayed(const Duration(seconds: 2));
     await MySharedPreferences.instance.setStringValue('user', jsonEncode(user));
   }
@@ -314,7 +356,7 @@ $ */
     // inspect(data);
     // log(data.toString());
     if (data == null || data.isEmpty) return;
-    log("fetched data from pref-->" + data);
+    log("fetched data from pref-->$data");
     var json = jsonDecode(data);
     _user = UserModel.fromJson(json);
   }

@@ -31,9 +31,9 @@ class _HomeScreenState extends State<HomeScreen> {
       position: RelativeRect.fromLTRB(5.0, UiHelper.height(context) * 0.75, 0,
           0), //position where you want to show the menu on screen
       items: [
-        const PopupMenuItem<String>(child: Text('Restaurant'), value: '1'),
-        const PopupMenuItem<String>(child: Text('Interview'), value: '2'),
-        const PopupMenuItem<String>(child: Text('Logout'), value: '3'),
+        const PopupMenuItem<String>(value: '1', child: Text('Restaurant')),
+        const PopupMenuItem<String>(value: '2', child: Text('Interview')),
+        const PopupMenuItem<String>(value: '3', child: Text('Logout')),
       ],
       elevation: 8.0,
     ).then<void>((String? itemSelected) {
@@ -130,103 +130,106 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         backgroundColor: Colors.grey.shade100,
         body: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
             child: Column(children: [
-          // SizedBox(
-          //   height: UiHelper.height(context) * 0.03,
-          // ),
-          Padding(
-            padding: const EdgeInsets.all(5.0),
-            child: Container(
-              alignment: Alignment.center,
-              height: 50,
-              width: double.infinity,
-              decoration: const BoxDecoration(
-                  borderRadius: BorderRadius.all(Radius.circular(30)),
-                  color: Colors.white),
-              child: TextButton.icon(
-                  onPressed: () {},
-                  icon: const Icon(Iconsax.messages4),
-                  label: Text(
-                    'Conversations',
-                    style: Styles.headingStyle4(isBold: true),
-                  )),
-            ),
-          ),
-          // List
-          Container(
-            // height: UiHelper.height(context),
+              // SizedBox(
+              //   height: UiHelper.height(context) * 0.03,
+              // ),
+              Padding(
+                padding: const EdgeInsets.all(5.0),
+                child: Container(
+                  alignment: Alignment.center,
+                  height: 50,
+                  width: double.infinity,
+                  decoration: const BoxDecoration(
+                      borderRadius: BorderRadius.all(Radius.circular(30)),
+                      color: Colors.white),
+                  child: TextButton.icon(
+                      onPressed: () {},
+                      icon: const Icon(Iconsax.messages4),
+                      label: Text(
+                        'Conversations',
+                        style: Styles.headingStyle4(isBold: true),
+                      )),
+                ),
+              ),
+              // List
+              Container(
+                // height: UiHelper.height(context),
 
-            color: Colors.white,
-            child: ListView.separated(
-                separatorBuilder: (context, index) => Padding(
-                      padding:
-                          EdgeInsets.only(left: UiHelper.width(context) * 0.16),
-                      child: const Divider(),
-                    ),
-                shrinkWrap: true,
-                itemBuilder: (context, index) {
-                  var time = DateTime.tryParse(
-                      provider.conversationList![index]!.time ??
-                          DateTime.now().toString());
-                  // log(data.timeAgo());
-                  // DateTime(data);
-                  return ListTile(
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 5,
-                    ),
-                    // minVerticalPadding: 5,
-                    leading: const Card(
-                      child: SizedBox(
-                        height: double.infinity,
-                        child: Padding(
-                          padding: EdgeInsets.all(5.0),
-                          child: CircleAvatar(
-                            radius: 25,
-                            child: Icon(Iconsax.message_21),
+                color: Colors.white,
+                child: ListView.separated(
+                    physics: const NeverScrollableScrollPhysics(),
+                    separatorBuilder: (context, index) => Padding(
+                          padding: EdgeInsets.only(
+                              left: UiHelper.width(context) * 0.16),
+                          child: const Divider(),
+                        ),
+                    shrinkWrap: true,
+                    itemBuilder: (context, index) {
+                      var time = DateTime.tryParse(
+                          provider.conversationList![index]!.time ??
+                              DateTime.now().toString());
+                      // log(data.timeAgo());
+                      // DateTime(data);
+                      return ListTile(
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 5,
+                        ),
+                        // minVerticalPadding: 5,
+                        leading: const Card(
+                          child: SizedBox(
+                            height: double.infinity,
+                            child: Padding(
+                              padding: EdgeInsets.all(5.0),
+                              child: CircleAvatar(
+                                radius: 25,
+                                child: Icon(Iconsax.message_21),
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                    ),
-                    title: Text(
-                      provider.conversationList![index]!.chatTitle ??
-                          'Restaurant',
-                      style: Styles.headingStyle4(isBold: true),
-                    ),
-                    subtitle: Text(
-                      provider.conversationList![index]!.chatList!.isNotEmpty
-                          ? provider.conversationList![index]!.chatList!.last!
-                                      .userId ==
-                                  null
-                              ? 'Bot: ${provider.conversationList![index]!.chatList!.last!.text}'
-                              : 'Human: ${provider.conversationList![index]!.chatList!.last!.text}'
-                          : 'Bot: Hello',
-                      // 'Bot: ${provider.conversationList![index]!.chatList!.isNotEmpty ? provider.conversationList![index]!.chatList!.last!.userId == null ? "Hello" : provider.conversationList![index]!.chatList!.last!.text : "Hello"}',
-                      style: Styles.headingStyle5(),
-                    ),
-                    trailing: Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          time!.timeAgo(),
-                          style: Styles.headingStyle6(),
+                        title: Text(
+                          provider.conversationList![index]!.chatTitle ??
+                              'Restaurant',
+                          style: Styles.headingStyle4(isBold: true),
                         ),
-                        const Padding(
-                          padding: EdgeInsets.only(right: 8.0),
-                          child: Icon(
-                            Iconsax.tick_circle5,
-                            size: 18,
-                            color: Colors.greenAccent,
-                          ),
-                        )
-                      ],
-                    ),
-                  );
-                },
-                itemCount: provider.getConversationList!.length),
-          ),
-          // tex
-        ])),
+                        subtitle: Text(
+                          provider.conversationList![index]!.chatList!
+                                  .isNotEmpty
+                              ? provider.conversationList![index]!.chatList!
+                                          .last!.userId ==
+                                      null
+                                  ? 'Bot: ${provider.conversationList![index]!.chatList!.last!.text}'
+                                  : 'Human: ${provider.conversationList![index]!.chatList!.last!.text}'
+                              : 'Bot: Hello',
+                          // 'Bot: ${provider.conversationList![index]!.chatList!.isNotEmpty ? provider.conversationList![index]!.chatList!.last!.userId == null ? "Hello" : provider.conversationList![index]!.chatList!.last!.text : "Hello"}',
+                          style: Styles.headingStyle5(),
+                        ),
+                        trailing: Column(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              time!.timeAgo(),
+                              style: Styles.headingStyle6(),
+                            ),
+                            const Padding(
+                              padding: EdgeInsets.only(right: 8.0),
+                              child: Icon(
+                                Iconsax.tick_circle5,
+                                size: 18,
+                                color: Colors.greenAccent,
+                              ),
+                            )
+                          ],
+                        ),
+                      );
+                    },
+                    itemCount: provider.getConversationList!.length),
+              ),
+              // tex
+            ])),
       ),
     );
   }
