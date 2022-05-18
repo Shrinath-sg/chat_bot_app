@@ -1,7 +1,6 @@
-import 'package:firebase_core/firebase_core.dart';
+// import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:task_app/provider/google_signin.dart';
 import 'package:task_app/provider/my_provider.dart';
 import 'package:task_app/screens/chat_screen.dart';
 import 'package:task_app/screens/dashboard.dart';
@@ -12,7 +11,7 @@ import 'package:task_app/utils/colors.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  // await Firebase.initializeApp();
   runApp(const MyApp());
 }
 
@@ -24,7 +23,7 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (ctx) => MyProvider()),
-        ChangeNotifierProvider(create: (ctx) => GoogleSignInProvider()),
+        // ChangeNotifierProvider(create: (ctx) => GoogleSignInProvider()),
       ],
       child: MaterialApp(
           title: 'Flutter Demo',
