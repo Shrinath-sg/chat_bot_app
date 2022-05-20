@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
+// import 'dart:math';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -35,11 +36,16 @@ class MyProvider extends ChangeNotifier {
   List<ChatModelRestaurant?>? _restaurant;
   String? get getTempConversationId => tempConversationId;
   List<CustomChatModel?>? capturedChats = [];
-  final List<ConverstaionModel?>? conversationList = [];
+  List<ConverstaionModel?>? conversationList = [];
   List<ConverstaionModel?>? get getConversationList => conversationList;
   List<CustomChatModel?>? get getCapturedChats => capturedChats!;
 
   List<ChatModelRestaurant?>? get restaurant => [..._restaurant ?? []];
+
+  set setTempConversationId(String? newVal) {
+    tempConversationId = newVal;
+    // notifyListeners();
+  }
 
   // RegExp? numReg = RegExp(r".*[0-9].*");
   // RegExp? letterReg = RegExp(r".*[A-Za-z].*");
@@ -96,11 +102,11 @@ $ */
     // _islListning = false;
     String? result = "Oops you missed something! Do you want to try again";
     String? human =
-        humanSentence!.toLowerCase().replaceAll(RegExp(",|!|'"), "");
+        humanSentence!.trim().toLowerCase().replaceAll(RegExp(",|!|'"), "");
 
     String? bot = _islListning
-        ? previousSentence!.toLowerCase().replaceAll(RegExp(",|!|'"), "")
-        : botSentence!.toLowerCase().replaceAll(RegExp(",|!|'"), "");
+        ? previousSentence!.trim().toLowerCase().replaceAll(RegExp(",|!|'"), "")
+        : botSentence!.trim().toLowerCase().replaceAll(RegExp(",|!|'"), "");
     _islListning = false;
     log("Before->>");
     log("$human\t $bot");
@@ -163,8 +169,10 @@ $ */
     }
     var index = restaurant!.indexWhere(
       (element) =>
-          element!.bot!.toLowerCase().replaceAll(RegExp(",|!|'"), "") == bot &&
-          element.human!.toLowerCase().replaceAll(RegExp(",|!|'"), "") == human,
+          element!.bot!.trim().toLowerCase().replaceAll(RegExp(",|!|'"), "") ==
+              bot &&
+          element.human!.trim().toLowerCase().replaceAll(RegExp(",|!|'"), "") ==
+              human,
     );
     log('index-->$index');
     // var data = restaurant!.firstWhere(
@@ -224,33 +232,64 @@ $ */
     return result;
   }
 
+  getNextValidSentence() {
+    if (capturedChats!.isNotEmpty) {
+      var _ele = capturedChats!
+          .lastWhere((element) => element!.userId == 1, orElse: () => null);
+      if (_ele != null) {
+        var _index = restaurant!.indexWhere((element) {
+          // log('from api--> ' + element!.human!.toLowerCase());
+          // log('from captured --> ' + _ele.text!.toLowerCase());
+          return _ele.text!
+              .toLowerCase()
+              .replaceAll(RegExp(",|!|'"), "")
+              .contains(element!.human!
+                  .toLowerCase()
+                  .replaceAll(RegExp(",|!|'"), ""));
+        });
+
+        tempIndex = _index + 1;
+        getNextSentence();
+      } else {
+        tempIndex = 0;
+        getNextSentence();
+      }
+      // capturedChats.lastWhere((element) => element!.userId == 1);
+    }
+    notifyListeners();
+  }
+
   getNextSentence() {
-    if (tempIndex == restaurant!.length - 1) {
-      return _nextSentence = "Thank You";
+    if (tempIndex! > restaurant!.length - 1) {
+      isChatCompleted = true;
+      return _nextSentence = "";
     }
     var data = _restaurant!.elementAt(tempIndex!);
     if (data == null) {
-      _nextSentence = "Thank You";
+      _nextSentence = "";
     } else {
       _nextSentence = data.human;
+      // log('valid sen---> $_nextSentence');
     }
     notifyListeners();
   }
 
   getPreviousSentence() {
-    if (tempIndex == restaurant!.length - 1) {
-      return "Thank You";
+    // log(tempIndex.toString());
+    if (tempIndex! > restaurant!.length - 1) {
+      isChatCompleted = true;
+      return "";
     }
     var data = _restaurant!.elementAt(tempIndex!);
     if (data == null) {
-      _previousSentence = "Thank You";
+      _previousSentence = "";
     } else {
       _previousSentence = data.bot;
     }
     notifyListeners();
   }
 
-  insertBotSentence({String? botSentence}) {
+  insertBotSentence({String? botSentence}) async {
     capturedChats!.add(CustomChatModel(
       text: botSentence,
       textId: GUIDGen.generate(),
@@ -260,12 +299,16 @@ $ */
     ));
 
     for (var element in conversationList!) {
+      // log("chatId" element!.chatId.toString());
       if (element!.chatId == tempConversationId) {
+        // log('inside');
         element.chatList!.clear();
         element.chatList!.addAll(capturedChats!);
+        // inspect(element.chatList);
         element.time = DateTime.now().toString();
       }
     }
+    await saveConversations(conversationList);
     getNextSentence();
     // log(conversationList!.length.toString());
 
@@ -275,7 +318,7 @@ $ */
   inserHumanSentence(
     String? humanSentence,
     // String? botSetntence,
-  ) {
+  ) async {
     capturedChats!.add(CustomChatModel(
         text: humanSentence,
         textId: GUIDGen.generate(),
@@ -291,8 +334,10 @@ $ */
         element.chatList!.addAll(capturedChats!);
         element.time = DateTime.now().toString();
       }
+
       // log(conversationList!.length.toString());
     }
+    await saveConversations(conversationList);
     getNextSentence();
     // var endEleIndex = capturedChats!.length - 1;
     // capturedChats![endEleIndex]!.isMe = true;
@@ -317,10 +362,44 @@ $ */
     notifyListeners();
   }
 
+  saveConversations(List<ConverstaionModel?>? conversationList) async {
+    // log("saved data-->${jsonEncode(user)}");
+    // await Future.delayed(const Duration(seconds: 2));
+    await MySharedPreferences.instance
+        .setStringValue('conversationList', jsonEncode(conversationList));
+  }
+
+  clearConversations() async {
+    await MySharedPreferences.instance.removeValue('conversationList');
+  }
+
+  getConversations() async {
+    await MySharedPreferences.instance.reload();
+    var data =
+        await MySharedPreferences.instance.getStringValue('conversationList');
+    log('after ftech');
+    inspect(data);
+    // log(data.toString());
+    if (data == null || data.isEmpty) return;
+    log("fetched data from pref-->$data");
+    var json = jsonDecode(data);
+    var fetchedList = List<ConverstaionModel>.from(
+        json.map((obj) => ConverstaionModel.fromJson(obj))).toList();
+    // var data2 = json.map((obj) => ConverstaionModel.fromJson(obj)).toList();
+    // inspect(data3);
+    if (fetchedList.isNotEmpty) {
+      conversationList = [];
+      conversationList!.addAll(fetchedList);
+      // log(element.chatTitle.toString());
+    }
+    notifyListeners();
+    // conversationList =   ConverstaionModel.fromJson(json);
+  }
+
   Future<int?> getChatData() async {
     try {
-      log("${constants.chatData}");
-      final response = await dio!.get(constants.chatData!);
+      log(constants.chatData);
+      final response = await dio!.get(constants.chatData);
       // Map<String, dynamic>? json =
       //     jsonDecode(response.data) as Map<String, dynamic>;
       log(jsonEncode(response.data));
@@ -339,7 +418,7 @@ $ */
       // log(err.message.toString());
       rethrow;
     } catch (e) {
-      log("${constants.chatData!} api error  -> ${e.toString()}");
+      log("${constants.chatData} api error  -> ${e.toString()}");
       rethrow;
     }
   }

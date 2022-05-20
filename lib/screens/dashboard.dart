@@ -1,5 +1,3 @@
-import 'dart:developer';
-
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:iconsax/iconsax.dart';
@@ -21,6 +19,17 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  @override
+  void initState() {
+    Future.delayed(Duration.zero, () => setUpInitial());
+    super.initState();
+  }
+
+  setUpInitial() async {
+    var provider = Provider.of<MyProvider>(context, listen: false);
+    await provider.getConversations();
+  }
+
   showPopupMenu(BuildContext context) {
     // final RenderBox renderBox =
     //     _accKey.currentContext?.findRenderObject() as RenderBox;
@@ -73,7 +82,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 // await gProvider.logout();
                 final bool result =
                     await MySharedPreferences.instance.removeAll();
-                await Future.delayed(const Duration(seconds: 2));
+                final provider =
+                    Provider.of<MyProvider>(context, listen: false);
+                provider.conversationList!.clear();
+
+                await Future.delayed(const Duration(seconds: 1));
                 if (result) {
                   if (!mounted) return;
                   Navigator.pushNamedAndRemoveUntil(
@@ -98,19 +111,21 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<MyProvider>(context);
+    // inspect(provider.conversationList);
     // var data = DateTime.now();
     // data.
-    // log(data.timeAgo());
+    // log(data.timeAgo());q
 
     // da
 
-    log(provider.conversationList!.length.toString());
+    // log(provider.conversationList!.length.toString());
     // log(DateTime.now().toString());
 
     return SafeArea(
       child: Scaffold(
         floatingActionButton: FloatingActionButton.extended(
-          onPressed: () {
+          onPressed: () async {
+            // await provider.getConversations();
             showPopupMenu(context);
             // _offsetPopup();
           },
@@ -173,6 +188,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       // log(data.timeAgo());
                       // DateTime(data);
                       return ListTile(
+                        onTap: (() => Navigator.pushNamed(
+                            context, ChatScreen.routeName,
+                            arguments:
+                                provider.conversationList![index]!.chatId)),
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 5,
                         ),

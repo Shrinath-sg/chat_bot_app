@@ -1,8 +1,8 @@
 library constants;
 
-const String? aJ = 'application/json';
-const String? auth = 'Authorization';
-const String? chatData =
+const String aJ = 'application/json';
+const String auth = 'Authorization';
+const String chatData =
     "https://my-json-server.typicode.com/tryninjastudy/dummyapi/db";
 RegExp passwordRegExp =
     RegExp(r'^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[!@#\$&*~]).{8,}$');

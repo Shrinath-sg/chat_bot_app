@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
@@ -29,6 +28,7 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final ScrollController _scrollController = ScrollController();
   final _speechTextClt = TextEditingController();
+  final FocusNode _focusNode = FocusNode();
   bool isLoading = true;
   var messages = [
     const SentMessageScreen(message: "Hello"),
@@ -62,7 +62,7 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     _initSpeech();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance!.addPostFrameCallback((_) {
       initLanguages();
     });
     Future.delayed(Duration.zero, () {
@@ -181,19 +181,45 @@ class _ChatScreenState extends State<ChatScreen> {
   //     });
   //   }
   // }
+  // loadExistedChats() {
+  //   final provider = Provider.of<MyProvider>(context, listen: false);
+  //   provider.conversationList.firstWhere((element) => element.chatId==)
+  // }
 
   setInitialChat() async {
+    String? routeId = ModalRoute.of(context)?.settings.arguments as String?;
+    // log('route id =>> $routeId');
     final provider = Provider.of<MyProvider>(context, listen: false);
     await provider.getChatData();
+    // inspect(provider.conversationList);
     provider.clearChats();
-    provider.tempConversationId = GUIDGen.generate();
-    provider.conversationList!.add(ConverstaionModel(
-        chatId: provider.tempConversationId,
-        chatTitle: 'Restaurant',
-        time: DateTime.now().toString(),
-        chatList: []));
-    provider.insertBotSentence(botSentence: 'Hello');
-    tts.speak(provider.capturedChats!.first!.text.toString());
+    if (routeId == null) {
+      provider.tempConversationId = GUIDGen.generate();
+      provider.conversationList!.add(ConverstaionModel(
+          chatId: provider.tempConversationId,
+          chatTitle: 'Restaurant',
+          time: DateTime.now().toString(),
+          chatList: []));
+      provider.insertBotSentence(botSentence: 'Hello');
+      tts.speak(provider.capturedChats!.first!.text.toString());
+    } else {
+      // log('here 1');
+      provider.setTempConversationId = routeId;
+      var _chatData = provider.conversationList!.firstWhere(
+          (element) => element!.chatId == routeId,
+          orElse: () => null);
+      // log('here 2');
+      // inspect(_chatData);
+      if (_chatData != null) {
+        // log('here 3');
+        provider.capturedChats = [];
+        provider.capturedChats!.addAll(_chatData.chatList!.toList());
+        provider.getNextValidSentence();
+        log('here 4');
+      }
+
+      // loadExistedChats();
+    }
 
     setState(() {
       isLoading = false;
@@ -203,13 +229,13 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void dispose() {
     _scrollController.dispose();
+    _focusNode.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<MyProvider>(context);
-    log(jsonEncode(provider.capturedChats));
     return SafeArea(
       child: Scaffold(
         // floatingActionButton: FloatingActionButton(onPressed: () {
@@ -289,206 +315,192 @@ class _ChatScreenState extends State<ChatScreen> {
                       ),
                     ),
                   ),
-                  SizedBox(
-                    width: double.infinity,
-                    child: Material(
-                      color: Colors.grey.shade100,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Text(
-                          //   // If listening is active show the recognized words
-                          //   _speechToText.isListening
-                          //       ? _lastWords
-                          //       // If listening isn't active but could be tell the user
-                          //       // how to start it, otherwise indicate that speech
-                          //       // recognition is not yet ready or not supported on
-                          //       // the target device
-                          //       : _speechEnabled
-                          //           ? 'Tap the microphone to start listening...'
-                          //           : 'Speech not available',
-                          // ),
-                          // if (provider.getIsLoading == false)
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              if (_hasSpeech)
-                                Row(
+                  provider.getIsChatCompleted
+                      ? Container()
+                      : SizedBox(
+                          width: double.infinity,
+                          child: Material(
+                            color: Colors.grey.shade100,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Expanded(
-                                      child: IconButton(
-                                        onPressed: () {
-                                          _speechTextClt.clear();
-                                          _hasSpeech = false;
-                                          setState(() {});
-                                        },
-                                        icon: const Icon(
-                                          Icons.delete,
-                                          color: AppColors.purple,
-                                          // size: 30,
-                                        ),
-                                      ),
-                                    ),
-                                    // const Spacer(),
-                                    Expanded(
-                                      flex: 3,
-                                      child: TextFormField(
-                                        controller: _speechTextClt,
-                                        autofocus: true,
-                                        // textAlign: TextAlign.end,
-                                        // style: const TextStyle(
-                                        //     color: Colors.white, fontSize: 30),
-                                        decoration:
-                                            const InputDecoration.collapsed(
-                                          hintText: "",
-                                          border: InputBorder.none,
-                                        ),
-                                        maxLines: 1,
-                                      ),
-                                    ),
-                                    // Text(
-                                    //   _lastWords,
-                                    //   style: Styles.headingStyle5(),
-                                    // ),
-                                    const SizedBox(
-                                      width: 10,
-                                    ),
-                                    IconButton(
-                                      onPressed: () async {
-                                        FocusScope.of(context).unfocus();
-                                        final provider =
-                                            Provider.of<MyProvider>(context,
-                                                listen: false);
-                                        if (provider.isChatCompleted) {
-                                          Fluttertoast.showToast(
-                                              msg: 'chat is completed!!');
-                                          return;
-                                        }
+                                    if (_hasSpeech)
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: IconButton(
+                                              onPressed: () {
+                                                _speechTextClt.clear();
+                                                _hasSpeech = false;
+                                                setState(() {});
+                                              },
+                                              icon: const Icon(
+                                                Icons.delete,
+                                                color: AppColors.purple,
+                                                // size: 30,
+                                              ),
+                                            ),
+                                          ),
+                                          // const Spacer(),
+                                          Expanded(
+                                            flex: 3,
+                                            child: TextFormField(
+                                              controller: _speechTextClt,
+                                              focusNode: _focusNode,
+                                              autofocus: true,
+                                              // textAlign: TextAlign.end,
+                                              // style: const TextStyle(
+                                              //     color: Colors.white, fontSize: 30),
+                                              decoration: const InputDecoration
+                                                  .collapsed(
+                                                hintText: "",
+                                                border: InputBorder.none,
+                                              ),
+                                              maxLines: 1,
+                                            ),
+                                          ),
+                                          // Text(
+                                          //   _lastWords,
+                                          //   style: Styles.headingStyle5(),
+                                          // ),
+                                          const SizedBox(
+                                            width: 10,
+                                          ),
+                                          IconButton(
+                                            onPressed: () async {
+                                              _focusNode.unfocus();
+                                              final provider =
+                                                  Provider.of<MyProvider>(
+                                                      context,
+                                                      listen: false);
+                                              if (provider.isChatCompleted) {
+                                                Fluttertoast.showToast(
+                                                    msg: 'chat is completed!!');
+                                                return;
+                                              }
 
-                                        provider.matchInputSetence(
-                                            botSentence: provider.capturedChats!
-                                                .elementAt(provider
-                                                        .capturedChats!.length -
-                                                    1)!
-                                                .text,
-                                            humanSentence: _speechTextClt.text);
-                                        tts.speak(provider
-                                            .capturedChats!.last!.text
-                                            .toString());
-                                        await Future.delayed(
-                                            const Duration(milliseconds: 1200));
-                                        if (_scrollController.hasClients) {
-                                          _scrollController.animateTo(
-                                            _scrollController
-                                                .position.maxScrollExtent,
-                                            curve: Curves.easeOut,
-                                            duration: const Duration(
-                                                milliseconds: 300),
-                                          );
-                                        }
-                                        setState(() {
-                                          _hasSpeech = false;
-                                        });
-                                      },
-                                      icon: const Icon(
-                                        Icons.send,
+                                              provider.matchInputSetence(
+                                                  botSentence: provider
+                                                      .capturedChats!
+                                                      .elementAt(provider
+                                                              .capturedChats!
+                                                              .length -
+                                                          1)!
+                                                      .text,
+                                                  humanSentence:
+                                                      _speechTextClt.text);
+                                              tts.speak(provider
+                                                  .capturedChats!.last!.text
+                                                  .toString());
+                                              await Future.delayed(
+                                                  const Duration(
+                                                      milliseconds: 1200));
+                                              if (_scrollController
+                                                  .hasClients) {
+                                                _scrollController.animateTo(
+                                                  _scrollController
+                                                      .position.maxScrollExtent,
+                                                  curve: Curves.easeOut,
+                                                  duration: const Duration(
+                                                      milliseconds: 300),
+                                                );
+                                              }
+                                              _speechTextClt.clear();
+                                              setState(() {
+                                                _hasSpeech = false;
+                                              });
+                                            },
+                                            icon: const Icon(
+                                              Icons.send,
+                                              color: AppColors.purple,
+                                              size: 30,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    if (!_hasSpeech)
+                                      Padding(
+                                        padding: const EdgeInsets.all(8.0),
+                                        child: Text(
+                                          "Suggestions",
+                                          style: Styles.headingStyle4(),
+                                        ),
+                                      ),
+                                    const Divider(),
+                                    ListTile(
+                                      leading: Icon(
+                                        Icons.lightbulb_outline,
+                                        color: Colors.yellow.shade700,
+                                      ),
+                                      title: Text(
+                                        provider.reTry
+                                            ? "Yes or no"
+                                            : provider.nextSentence ??
+                                                "Yes or no",
+                                        style: Styles.headingStyle5(),
+                                      ),
+                                      subtitle: Text(
+                                        "Reply by",
+                                        style:
+                                            Styles.headingStyle5(isBold: true),
+                                      ),
+                                      trailing: const Icon(
+                                        Icons.headset,
                                         color: AppColors.purple,
-                                        size: 30,
+                                        size: 20,
                                       ),
                                     ),
-                                    // InkWell(
-                                    //   onTap: () {},
-                                    //   child: const Icon(
-                                    //     Icons.send,
-                                    //     color: AppColors.purple,
-                                    //     size: 30,
-                                    //   ),
-                                    // ),
                                   ],
                                 ),
-                              if (!_hasSpeech)
-                                Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: Text(
-                                    "Suggestions",
-                                    style: Styles.headingStyle4(),
-                                  ),
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceAround,
+                                  children: [
+                                    Container(),
+                                    Card(
+                                      shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(25)),
+                                      child: IconButton(
+                                          onPressed: () async {
+                                            _speechToText.isNotListening
+                                                ? _startListening()
+                                                : _stopListening();
+                                          },
+                                          icon: Icon(
+                                            _speechToText.isNotListening
+                                                ? Icons.mic_off
+                                                : Icons.mic,
+                                            color: AppColors.purple,
+                                            size: 30,
+                                          )),
+                                    ),
+                                    Card(
+                                      shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(25)),
+                                      child: IconButton(
+                                          onPressed: () {
+                                            setState(() {
+                                              _hasSpeech = true;
+                                            });
+                                            _focusNode.requestFocus();
+                                          },
+                                          icon: const Icon(
+                                            Iconsax.keyboard_open5,
+                                            color: AppColors.purple,
+                                            size: 28,
+                                          )),
+                                    )
+                                  ],
                                 ),
-                              const Divider(),
-                              ListTile(
-                                leading: Icon(
-                                  Icons.lightbulb_outline,
-                                  color: Colors.yellow.shade700,
-                                ),
-                                title: Text(
-                                  provider.reTry
-                                      ? "Yes or no"
-                                      : provider.nextSentence ?? "Yes or no",
-                                  style: Styles.headingStyle5(),
-                                ),
-                                subtitle: Text(
-                                  "Reply by",
-                                  style: Styles.headingStyle5(isBold: true),
-                                ),
-                                trailing: const Icon(
-                                  Icons.headset,
-                                  color: AppColors.purple,
-                                  size: 20,
-                                ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceAround,
-                            children: [
-                              Container(),
-                              Card(
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(25)),
-                                child: IconButton(
-                                    onPressed: () async {
-                                      _speechToText.isNotListening
-                                          ? _startListening()
-                                          : _stopListening();
-
-                                      // var endEleIndex =
-                                      //     provider.capturedChats!.length - 1;
-                                      // provider.capturedChats!.insert(endEleIndex,
-                                      //     ChatModelRestaurant(bot: data!));
-                                    },
-                                    icon: Icon(
-                                      _speechToText.isNotListening
-                                          ? Icons.mic_off
-                                          : Icons.mic,
-                                      color: AppColors.purple,
-                                      size: 30,
-                                    )),
-                              ),
-                              Card(
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(25)),
-                                child: IconButton(
-                                    onPressed: () {
-                                      // final provider = Provider.of<MyProvider>(
-                                      //     context,
-                                      //     listen: false);
-                                      // var data = provider.matchInputSetence(
-                                      //     botSentence: "Would you like some water?",
-                                      //     humanSentence: "yes please");
-                                      // Fluttertoast.showToast(msg: data.toString());
-                                    },
-                                    icon: const Icon(
-                                      Iconsax.keyboard_open5,
-                                      color: AppColors.purple,
-                                      size: 28,
-                                    )),
-                              )
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+                        ),
                 ],
               ),
       ),

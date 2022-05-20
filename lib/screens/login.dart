@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:provider/provider.dart';
 import 'package:task_app/common_widgets/custom_button.dart';
@@ -117,41 +118,41 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 CustomButton(
                   onPressed: () async {
-                    Navigator.pushNamedAndRemoveUntil(
-                      context,
-                      HomeScreen.routeName,
-                      (route) => false,
-                    );
-                    // FocusScope.of(context).unfocus();
-                    // if (!_formKey.currentState!.validate()) {
-                    //   Fluttertoast.showToast(
-                    //       msg: 'Please fill all mandatory fields');
-                    //   return;
-                    // }
-                    // // inspect(provider.user);
-                    // if (provider.user!.email == null) {
-                    //   UiHelper.openLoadingDialog(context, "Please wait..");
-                    //   await Future.delayed(const Duration(seconds: 2));
-                    //   Navigator.pop(context);
-                    //   Fluttertoast.showToast(
-                    //       msg: 'No user found! please register');
-                    //   return;
-                    // }
+                    // Navigator.pushNamedAndRemoveUntil(
+                    //   context,
+                    //   HomeScreen.routeName,
+                    //   (route) => false,
+                    // );
+                    FocusScope.of(context).unfocus();
+                    if (!_formKey.currentState!.validate()) {
+                      Fluttertoast.showToast(
+                          msg: 'Please fill all mandatory fields');
+                      return;
+                    }
+                    // inspect(provider.user);
+                    if (provider.user!.email == null) {
+                      UiHelper.openLoadingDialog(context, "Please wait..");
+                      await Future.delayed(const Duration(seconds: 2));
+                      Navigator.pop(context);
+                      Fluttertoast.showToast(
+                          msg: 'No user found! please register');
+                      return;
+                    }
 
-                    // if (provider.user!.email == _emailCtl.text.trim() &&
-                    //     provider.user!.password == _passwordCtl.text.trim()) {
-                    //   UiHelper.openLoadingDialog(context, "Logging in..");
-                    //   await Future.delayed(const Duration(seconds: 2));
-                    //   // Navigator.pop(context)
-                    //   Navigator.pushNamedAndRemoveUntil(
-                    //     context,
-                    //     HomeScreen.routeName,
-                    //     (route) => false,
-                    //   );
-                    // } else {
-                    //   Fluttertoast.showToast(
-                    //       msg: 'No user found! please register');
-                    // }
+                    if (provider.user!.email == _emailCtl.text.trim() &&
+                        provider.user!.password == _passwordCtl.text.trim()) {
+                      UiHelper.openLoadingDialog(context, "Logging in..");
+                      await Future.delayed(const Duration(seconds: 2));
+                      // Navigator.pop(context)
+                      Navigator.pushNamedAndRemoveUntil(
+                        context,
+                        HomeScreen.routeName,
+                        (route) => false,
+                      );
+                    } else {
+                      Fluttertoast.showToast(
+                          msg: 'No user found! please register');
+                    }
                   },
                   text: 'Login',
                 ),
